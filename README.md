@@ -86,3 +86,4 @@ Once Render deploys your app:
 5. Create a new database named `sis_db`.
 6. Click **Import** and choose `database/sis_db.sql`.
 7. Open [http://localhost/sis](http://localhost/sis) in your browser.
+
