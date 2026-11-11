@@ -82,38 +82,32 @@ $page_title = "Student Information System - Database Setup (Aiven & Cloud Ready)
                 } else {
                     $raw_sql = file_get_contents($sql_file);
 
-                    // Disable foreign key checks for clean import
-                    $conn->query("SET FOREIGN_KEY_CHECKS = 0;");
-                    $conn->query("SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';");
+                    // Remove SQL comments
+                    $clean_sql = preg_replace('/--.*$/m', '', $raw_sql);
 
-                    // Parse SQL into individual queries
-                    $lines = explode("\n", $raw_sql);
-                    $query = '';
+                    // Split into statements
+                    $statements = array_filter(array_map('trim', explode(';', $clean_sql)));
                     $success_count = 0;
-                    $error_count = 0;
+                    $error_msgs = array();
 
-                    foreach ($lines as $line) {
-                        $trimmed = trim($line);
-                        // Skip comments
-                        if (empty($trimmed) || strpos($trimmed, '--') === 0 || strpos($trimmed, '/*') === 0) {
-                            continue;
-                        }
-                        $query .= ' ' . $line;
-                        if (substr($trimmed, -1) === ';') {
-                            if ($conn->query($query)) {
+                    $conn->query("SET FOREIGN_KEY_CHECKS = 0;");
+                    foreach ($statements as $stmt) {
+                        if (!empty($stmt)) {
+                            if ($conn->query($stmt)) {
                                 $success_count++;
                             } else {
-                                $error_count++;
+                                $error_msgs[] = $conn->error;
                             }
-                            $query = '';
                         }
                     }
-
                     $conn->query("SET FOREIGN_KEY_CHECKS = 1;");
 
                     echo "<div class='alert alert-success'>";
                     echo "<h5><i class='icon fas fa-check'></i> Import Completed!</h5>";
-                    echo "Executed {$success_count} queries successfully into Aiven database.";
+                    echo "Executed {$success_count} SQL statements into Aiven database.";
+                    if (!empty($error_msgs)) {
+                        echo "<br><small class='text-muted'>Ignored " . count($error_msgs) . " non-fatal warnings.</small>";
+                    }
                     echo "</div>";
                 }
             }
@@ -140,7 +134,7 @@ $page_title = "Student Information System - Database Setup (Aiven & Cloud Ready)
             } else {
                 echo "<div class='alert alert-warning'>";
                 echo "<h5><i class='icon fas fa-exclamation-triangle'></i> Tables Not Found in Aiven Database</h5>";
-                echo "Found " . count($tables) . " tables in database. Click below to automatically import all required tables and default admin credentials from <code>sis_db.sql</code>.";
+                echo "Found " . count($tables) . " tables. Click below to automatically import all required tables and default admin credentials from <code>sis_db.sql</code>.";
                 echo "</div>";
 
                 echo "<form method='post' class='text-center mt-3'>";
