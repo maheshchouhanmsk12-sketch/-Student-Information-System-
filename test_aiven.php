@@ -31,3 +31,4 @@ if ($connected && !$conn->connect_error) {
     echo "\n[FAILED] Connection error: " . ($conn->connect_error ?: mysqli_connect_error()) . "\n";
     exit(1);
 }
+
