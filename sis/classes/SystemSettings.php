@@ -11,21 +11,40 @@ class SystemSettings extends DBConnection{
 		return($this->conn);
 	}
 	function load_system_info(){
-		// if(!isset($_SESSION['system_info'])){
+		if (!isset($_SESSION['system_info'])) {
+			$_SESSION['system_info'] = array();
+		}
+		if ($this->conn && !($this->conn->connect_error)) {
 			$sql = "SELECT * FROM system_info";
-			$qry = $this->conn->query($sql);
+			$qry = @$this->conn->query($sql);
+			if ($qry && $qry instanceof mysqli_result) {
 				while($row = $qry->fetch_assoc()){
 					$_SESSION['system_info'][$row['meta_field']] = $row['meta_value'];
 				}
-		// }
+				$qry->free();
+			} else {
+				// Fallback defaults if database tables are not yet created
+				if (empty($_SESSION['system_info']['name'])) {
+					$_SESSION['system_info']['name'] = 'Student Information System';
+				}
+				if (empty($_SESSION['system_info']['short_name'])) {
+					$_SESSION['system_info']['short_name'] = 'SIS';
+				}
+			}
+		}
 	}
 	function update_system_info(){
-		$sql = "SELECT * FROM system_info";
-		$qry = $this->conn->query($sql);
-			while($row = $qry->fetch_assoc()){
-				if(isset($_SESSION['system_info'][$row['meta_field']]))unset($_SESSION['system_info'][$row['meta_field']]);
-				$_SESSION['system_info'][$row['meta_field']] = $row['meta_value'];
+		if ($this->conn && !($this->conn->connect_error)) {
+			$sql = "SELECT * FROM system_info";
+			$qry = @$this->conn->query($sql);
+			if ($qry && $qry instanceof mysqli_result) {
+				while($row = $qry->fetch_assoc()){
+					if(isset($_SESSION['system_info'][$row['meta_field']])) unset($_SESSION['system_info'][$row['meta_field']]);
+					$_SESSION['system_info'][$row['meta_field']] = $row['meta_value'];
+				}
+				$qry->free();
 			}
+		}
 		return true;
 	}
 	function update_settings_info(){
@@ -99,6 +118,8 @@ class SystemSettings extends DBConnection{
 		
 				list($width, $height) = getimagesize($upload);
 				$t_image = imagecreatetruecolor($new_width, $new_height);
+				imagealphablending( $t_image, false );
+				imagesavealpha( $t_image, true );
 				$gdImg = ($type == 'image/png')? imagecreatefrompng($upload) : imagecreatefromjpeg($upload);
 				imagecopyresampled($t_image, $gdImg, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
 				if($gdImg){
@@ -123,10 +144,10 @@ class SystemSettings extends DBConnection{
 		}
 		
 		$update = $this->update_system_info();
-		$flash = $this->set_flashdata('success',$resp['msg']);
+		$flash = $this->set_flashdata('success','System Info Successfully Updated.');
 		if($update && $flash){
 			// var_dump($_SESSION);
-			return true;
+			return json_encode(array("status"=>1));
 		}
 	}
 	function set_userdata($field='',$value=''){
@@ -151,8 +172,11 @@ class SystemSettings extends DBConnection{
 		}
 	}
 	function chk_flashdata($flash = ''){
-		if(isset($_SESSION['flashdata'][$flash])){
-			return true;
+		if(!empty($flash)){
+			if(isset($_SESSION['flashdata'][$flash]))
+				return true;
+			else
+				return false;
 		}else{
 			return false;
 		}
@@ -160,7 +184,7 @@ class SystemSettings extends DBConnection{
 	function flashdata($flash = ''){
 		if(!empty($flash)){
 			$_tmp = $_SESSION['flashdata'][$flash];
-			unset($_SESSION['flashdata']);
+			unset($_SESSION['flashdata'][$flash]);
 			return $_tmp;
 		}else{
 			return false;
@@ -189,6 +213,7 @@ class SystemSettings extends DBConnection{
 		}
 	}
 }
+
 $_settings = new SystemSettings();
 $_settings->load_system_info();
 $action = !isset($_GET['f']) ? 'none' : strtolower($_GET['f']);

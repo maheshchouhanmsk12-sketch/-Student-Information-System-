@@ -34,8 +34,7 @@ $page_title = "Student Information System - Database Setup (Aiven & Cloud Ready)
         $db_name = DB_NAME;
         $db_port = defined('DB_PORT') ? DB_PORT : 3306;
 
-        echo "<div class='alert alert-info'><strong>Connected Configuration:</strong><br>";
-        echo "<ul class='mb-0' style='padding-left: 20px;'>";
+        echo "<div class='alert alert-info'><strong>Connected Configuration:</strong><br><ul class='mb-0' style='padding-left: 20px;'>";
         echo "<li><strong>Host:</strong> <code>" . htmlspecialchars($db_host) . "</code></li>";
         echo "<li><strong>Port:</strong> <code>" . htmlspecialchars($db_port) . "</code></li>";
         echo "<li><strong>Database:</strong> <code>" . htmlspecialchars($db_name) . "</code></li>";
@@ -75,14 +74,63 @@ $page_title = "Student Information System - Database Setup (Aiven & Cloud Ready)
         } else {
             echo "<div class='alert alert-success'><i class='fas fa-check-circle mr-2'></i> Successfully connected to Aiven / MySQL server!</div>";
 
-            // Check if tables already exist
-            $check_tbl = $conn->query("SHOW TABLES LIKE 'system_info'");
-            $tables_exist = ($check_tbl && $check_tbl->num_rows > 0);
+            // If user clicked import
+            if (isset($_POST['run_import'])) {
+                $sql_file = __DIR__ . '/database/sis_db.sql';
+                if (!file_exists($sql_file)) {
+                    echo "<div class='alert alert-danger'>File sis_db.sql not found at {$sql_file}!</div>";
+                } else {
+                    $raw_sql = file_get_contents($sql_file);
 
-            if ($tables_exist) {
+                    // Disable foreign key checks for clean import
+                    $conn->query("SET FOREIGN_KEY_CHECKS = 0;");
+                    $conn->query("SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';");
+
+                    // Parse SQL into individual queries
+                    $lines = explode("\n", $raw_sql);
+                    $query = '';
+                    $success_count = 0;
+                    $error_count = 0;
+
+                    foreach ($lines as $line) {
+                        $trimmed = trim($line);
+                        // Skip comments
+                        if (empty($trimmed) || strpos($trimmed, '--') === 0 || strpos($trimmed, '/*') === 0) {
+                            continue;
+                        }
+                        $query .= ' ' . $line;
+                        if (substr($trimmed, -1) === ';') {
+                            if ($conn->query($query)) {
+                                $success_count++;
+                            } else {
+                                $error_count++;
+                            }
+                            $query = '';
+                        }
+                    }
+
+                    $conn->query("SET FOREIGN_KEY_CHECKS = 1;");
+
+                    echo "<div class='alert alert-success'>";
+                    echo "<h5><i class='icon fas fa-check'></i> Import Completed!</h5>";
+                    echo "Executed {$success_count} queries successfully into Aiven database.";
+                    echo "</div>";
+                }
+            }
+
+            // Check existing tables
+            $tables_res = $conn->query("SHOW TABLES");
+            $tables = array();
+            if ($tables_res) {
+                while ($r = $tables_res->fetch_array()) {
+                    $tables[] = $r[0];
+                }
+            }
+
+            if (in_array('system_info', $tables) && in_array('users', $tables)) {
                 echo "<div class='alert alert-success'>";
-                echo "<h5><i class='icon fas fa-check'></i> Database tables are installed and ready!</h5>";
-                echo "All student, department, course, and system records exist in the database.";
+                echo "<h5><i class='icon fas fa-check'></i> Database tables are installed and verified!</h5>";
+                echo "Tables found: <code>" . implode(', ', $tables) . "</code>";
                 echo "</div>";
 
                 echo "<div class='text-center mt-4'>";
@@ -90,44 +138,14 @@ $page_title = "Student Information System - Database Setup (Aiven & Cloud Ready)
                 echo "<br><br><small class='text-muted'>Default credentials: Username: <b>admin</b> &nbsp;|&nbsp; Password: <b>admin123</b></small>";
                 echo "</div>";
             } else {
-                if (isset($_POST['run_import'])) {
-                    $sql_file = __DIR__ . '/database/sis_db.sql';
-                    if (!file_exists($sql_file)) {
-                        echo "<div class='alert alert-danger'>File sis_db.sql not found at {$sql_file}!</div>";
-                    } else {
-                        $sql = file_get_contents($sql_file);
-                        
-                        // Execute multi query
-                        if ($conn->multi_query($sql)) {
-                            do {
-                                if ($res = $conn->store_result()) {
-                                    $res->free();
-                                }
-                            } while ($conn->more_results() && $conn->next_result());
+                echo "<div class='alert alert-warning'>";
+                echo "<h5><i class='icon fas fa-exclamation-triangle'></i> Tables Not Found in Aiven Database</h5>";
+                echo "Found " . count($tables) . " tables in database. Click below to automatically import all required tables and default admin credentials from <code>sis_db.sql</code>.";
+                echo "</div>";
 
-                            echo "<div class='alert alert-success'>";
-                            echo "<h5><i class='icon fas fa-check'></i> All Done!</h5>";
-                            echo "Database <code>sis_db.sql</code> has been imported into Aiven successfully!";
-                            echo "</div>";
-
-                            echo "<div class='text-center mt-3'>";
-                            echo "<a href='" . base_url . "admin/login.php' class='btn btn-primary btn-lg'><i class='fas fa-sign-in-alt mr-2'></i> Proceed to Admin Login</a>";
-                            echo "<br><br><small class='text-muted'>Default credentials: Username: <b>admin</b> &nbsp;|&nbsp; Password: <b>admin123</b></small>";
-                            echo "</div>";
-                        } else {
-                            echo "<div class='alert alert-danger'>Error importing SQL: " . htmlspecialchars($conn->error) . "</div>";
-                        }
-                    }
-                } else {
-                    echo "<div class='alert alert-warning'>";
-                    echo "<h5><i class='icon fas fa-exclamation-triangle'></i> Tables Not Found in Aiven Database</h5>";
-                    echo "The Aiven database is currently blank. Click below to automatically import all required tables and default admin credentials from <code>sis_db.sql</code>.";
-                    echo "</div>";
-
-                    echo "<form method='post' class='text-center mt-3'>";
-                    echo "<button type='submit' name='run_import' value='1' class='btn btn-primary btn-lg'><i class='fas fa-upload mr-2'></i> Import Database to Aiven Now</button>";
-                    echo "</form>";
-                }
+                echo "<form method='post' class='text-center mt-3'>";
+                echo "<button type='submit' name='run_import' value='1' class='btn btn-primary btn-lg'><i class='fas fa-upload mr-2'></i> Import Database to Aiven Now</button>";
+                echo "</form>";
             }
 
             $conn->close();
