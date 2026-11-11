@@ -2,9 +2,11 @@
 Header set Access-Control-Allow-Origin "*"
 RewriteEngine on
 
-# Prevent Apache from appending internal port on directory redirects
-RewriteRule ^admin$ admin/ [L,R=301]
-RewriteRule ^user$ user/ [L,R=301]
+# Fix directory slash redirects behind reverse proxy without appending internal port
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteCond %{REQUEST_URI} !/$
+RewriteCond %{HTTP_HOST} ^([^:]+)
+RewriteRule ^(.*)$ https://%1/$1/ [R=301,L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
