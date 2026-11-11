@@ -4,15 +4,20 @@ if(!defined('DB_SERVER')){
 }
 class DBConnection{
 
-    private $host = DB_SERVER;
-    private $username = DB_USERNAME;
-    private $password = DB_PASSWORD;
-    private $database = DB_NAME;
-    private $port = defined('DB_PORT') ? DB_PORT : 3306;
+    private $host;
+    private $username;
+    private $password;
+    private $database;
+    private $port;
     
     public $conn;
     
     public function __construct(){
+        $this->host = defined('DB_SERVER') ? DB_SERVER : 'localhost';
+        $this->username = defined('DB_USERNAME') ? DB_USERNAME : 'root';
+        $this->password = defined('DB_PASSWORD') ? DB_PASSWORD : '';
+        $this->database = defined('DB_NAME') ? DB_NAME : 'sis_db';
+        $this->port = defined('DB_PORT') ? (int)DB_PORT : 3306;
 
         if (!isset($this->conn)) {
             // Turn off automatic fatal exception throwing on mysqli connection error in PHP 8.1+
