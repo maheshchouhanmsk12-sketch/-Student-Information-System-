@@ -1,7 +1,12 @@
 <IfModule mod_rewrite.c>
 Header set Access-Control-Allow-Origin "*"
 RewriteEngine on
+
+# Prevent Apache from appending internal port on directory redirects
+RewriteRule ^admin$ admin/ [L,R=301]
+RewriteRule ^user$ user/ [L,R=301]
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$    /index.php/$2/?page=$1   [L]
+RewriteRule ^(.*)$ /index.php?page=$1 [L]
 </IfModule>
