@@ -40,7 +40,7 @@ $(document).ready(function() {
                 if (resp) {
                     resp = JSON.parse(resp)
                     if (resp.status == 'success') {
-                        location.replace(_base_url_ + 'admin/');
+                        location.replace(_base_url_ + 'admin/index.php');
                     } else if (resp.status == 'incorrect') {
                         var _frm = $('#login-frm')
                         var _msg = "<div class='alert alert-danger text-white err_msg'><i class='fa fa-exclamation-triangle'></i> Incorrect username or password</div>"
