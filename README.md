@@ -1,89 +1,79 @@
-# Student Information System (SIS) - Deployment & Setup Guide
+# Student Information System (SIS)
 
-A web-based **Student Information System** built using PHP, MySQL, Bootstrap 4, and AdminLTE 3.
-
----
-
-## 🚀 How to Deploy on Render (Step-by-Step for Beginners)
-
-Because Render does not provide native PHP runtime or native MySQL, this project is pre-configured with **Docker** and connects to any free cloud MySQL database.
-
-### Step 1: Create a Free Cloud MySQL Database
-Choose any of these free MySQL providers:
-- **TiDB Cloud (Serverless)**: [https://tidbcloud.com](https://tidbcloud.com) (Free 5GB MySQL-compatible database)
-- **Clever Cloud**: [https://www.clever-cloud.com](https://www.clever-cloud.com) (Free MySQL add-on)
-- **Aiven**: [https://aiven.io](https://aiven.io) (Free trial MySQL)
-
-After creating your database, note down:
-- `Host` (e.g., `gateway01.us-east-1.prod.aws.tidbcloud.com`)
-- `Port` (usually `4000` for TiDB or `3306` for standard MySQL)
-- `Database Name` (e.g., `sis_db` or your custom DB name)
-- `User` (e.g., `root` or generated user)
-- `Password`
+A complete web-based **Student Information System** built using PHP, MySQL (Aiven Cloud Ready), Bootstrap 4, and AdminLTE 3.
 
 ---
 
-### Step 2: Push this Project to GitHub
+## 🌐 Live Application Link
 
-1. Create a new repository on your GitHub account (e.g. `sis-project`).
-2. Run these commands in your project terminal:
-   ```bash
-   git add .
-   git commit -m "Prepare SIS for Render deployment with Docker"
-   git branch -M main
-   git remote add origin https://github.com/<YOUR_USERNAME>/sis-project.git
-   git push -u origin main
-   ```
+- **Live URL:** [https://student-information-system-5wqk.onrender.com/](https://student-information-system-5wqk.onrender.com/)
+- **Admin Login:** [https://student-information-system-5wqk.onrender.com/admin/login.php](https://student-information-system-5wqk.onrender.com/admin/login.php)
+- **Database Setup & Health Check:** [https://student-information-system-5wqk.onrender.com/db_setup.php](https://student-information-system-5wqk.onrender.com/db_setup.php)
 
 ---
 
-### Step 3: Create a Web Service on Render
+## 🔑 Admin Login Credentials
 
-1. Go to [https://dashboard.render.com](https://dashboard.render.com).
-2. Click **New +** -> **Web Service**.
-3. Select **Build and deploy from a Git repository** and connect your `sis-project` repository.
-4. Settings:
-   - **Name**: `student-information-system` (or anything you like)
-   - **Region**: Closest to you (e.g., Singapore / Oregon / Frankfurt)
-   - **Environment**: `Docker` (Render will automatically detect the `Dockerfile`)
-   - **Plan**: `Free`
-5. Scroll down to **Environment Variables** and add:
-   - `DB_SERVER` = *(Your cloud MySQL Host)*
-   - `DB_USERNAME` = *(Your cloud MySQL User)*
-   - `DB_PASSWORD` = *(Your cloud MySQL Password)*
-   - `DB_NAME` = *(Your cloud MySQL Database Name)*
-   - `DB_PORT` = *(Your cloud MySQL Port, e.g. 3306 or 4000)*
-6. Click **Create Web Service**.
+| Role | Username | Password | Access URL |
+| :--- | :--- | :--- | :--- |
+| **Administrator** | `admin` | `admin123` | [Open Login Page](https://student-information-system-5wqk.onrender.com/admin/login.php) |
 
 ---
 
-### Step 4: One-Click Database Setup
+## 🛠️ Technology Stack & Deployment Architecture
 
-Once Render deploys your app:
-1. Open your Render live URL:
-   `https://<your-service-name>.onrender.com/db_setup.php`
-2. You will see the **Database Setup & Health Check** page.
-3. Click the button: **"Import Database Now"**.
-4. That's it! Your tables, courses, departments, and default admin will be automatically created.
-5. Click **Proceed to Admin Login** or go to `https://<your-service-name>.onrender.com/admin/login.php`.
+- **Backend:** PHP 8.2 (Object-Oriented + Procedural with `mysqli`)
+- **Hosting Platform:** [Render](https://render.com) (Docker Container Web Service)
+- **Database:** [Aiven MySQL](https://aiven.io) (Cloud MySQL with SSL/TLS encryption enabled)
+- **Frontend Framework:** AdminLTE 3, Bootstrap 4, FontAwesome 5, jQuery, DataTables, SweetAlert2
+- **Dynamic Port & Routing:** Dynamic Render `$PORT` binding via Apache startup script (`start.sh`)
 
 ---
 
-## 🔑 Default Login Credentials
+## ⚙️ Environment Variables (Render Web Service)
 
-- **URL**: `https://<your-app>.onrender.com/admin/login.php`
-- **Username**: `admin`
-- **Password**: `admin123`
+The following Environment Variables are configured in the Render Dashboard:
+
+| Variable | Description | Example Value |
+| :--- | :--- | :--- |
+| `DB_SERVER` | Aiven Cloud MySQL Host | `mysql-xxxx.aivencloud.com` |
+| `DB_PORT` | Aiven Cloud MySQL Port | `26284` |
+| `DB_USERNAME` | MySQL Username | `avnadmin` |
+| `DB_PASSWORD` | MySQL Password | *(Your Aiven Password)* |
+| `DB_NAME` | Database Name | `defaultdb` |
+| `DB_SSL` | Enable SSL encryption | `true` |
 
 ---
 
-## 💻 Running Locally (Optional via XAMPP)
+## 🚀 How to Run Locally (via XAMPP)
 
-1. Download & Install [XAMPP](https://www.apachefriends.org/).
-2. Copy the `sis` folder into `C:/xampp/htdocs/sis`.
-3. Open XAMPP Control Panel and start **Apache** & **MySQL**.
-4. Open [http://localhost/phpmyadmin](http://localhost/phpmyadmin) in your browser.
+1. Download and install [XAMPP](https://www.apachefriends.org/).
+2. Copy the `sis` folder into your XAMPP web root: `C:/xampp/htdocs/sis`.
+3. Start **Apache** and **MySQL** in the XAMPP Control Panel.
+4. Open [http://localhost/phpmyadmin](http://localhost/phpmyadmin).
 5. Create a new database named `sis_db`.
-6. Click **Import** and choose `database/sis_db.sql`.
+6. Import `sis/database/sis_db.sql`.
 7. Open [http://localhost/sis](http://localhost/sis) in your browser.
+8. Login with `admin` / `admin123`.
 
+---
+
+## 📁 Repository Structure
+
+```text
+├── Dockerfile                  # Production Docker container configuration (PHP 8.2 + Apache)
+├── render.yaml                 # Render Blueprint deployment definition
+├── start.sh                    # Dynamic Apache PORT startup script
+├── test_aiven.php              # Aiven MySQL CLI connection verification tool
+├── README.md                   # Project documentation & credentials
+└── sis/                        # Main Application Code
+    ├── admin/                  # Admin Dashboard, Student management, Departments, Courses
+    ├── classes/                # Business logic (DBConnection.php, Login.php, SystemSettings.php)
+    ├── database/               # Database SQL schema (sis_db.sql)
+    ├── db_setup.php            # 1-Click Database Setup & Importer tool for Cloud DBs
+    ├── dist/                   # AdminLTE 3 CSS, JS & theme assets
+    ├── plugins/                # Bootstrap, jQuery, FontAwesome, DataTables libraries
+    ├── uploads/                # User avatars, logos, and system images
+    ├── initialize.php          # Dynamic configuration & environment variables loader
+    └── index.php               # Main landing redirect
+```
