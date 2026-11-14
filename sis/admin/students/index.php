@@ -39,7 +39,8 @@
 					<?php 
 						$i = 1;
 						$qry = $conn->query("SELECT *,concat(lastname,', ',firstname,' ',middlename) as fullname from `student_list` order by concat(lastname,', ',firstname,' ',middlename) asc ");
-						while($row = $qry->fetch_assoc()):
+						if ($qry && $qry instanceof mysqli_result):
+							while($row = $qry->fetch_assoc()):
 					?>
 						<tr>
 							<td class="text-center"><?php echo $i++; ?></td>
@@ -62,7 +63,14 @@
 								 <a href="./?page=students/view_student&id=<?= $row['id'] ?>" class="btn btn-flat btn-default btn-sm border"><i class="fa fa-eye"></i> View</a>
 							</td>
 						</tr>
-					<?php endwhile; ?>
+					<?php 
+							endwhile; 
+						else:
+					?>
+						<tr>
+							<td colspan="6" class="text-center text-muted">No student records found.</td>
+						</tr>
+					<?php endif; ?>
 				</tbody>
 			</table>
 		</div>
